@@ -9,6 +9,7 @@ import (
 	"github.com/DataDog/datadog-trace-agent/config"
 	"github.com/DataDog/datadog-trace-agent/model"
 	"github.com/DataDog/datadog-trace-agent/statsd"
+	"github.com/DataDog/datadog-trace-agent/watchdog"
 )
 
 // the amount of time in seconds to wait before resending a payload
@@ -69,6 +70,7 @@ func NewWriter(conf *config.AgentConfig) *Writer {
 		if conf.Proxy != nil {
 			// we have some kind of proxy configured.
 			// make sure our http client uses it
+			log.Infof("configuring proxy through host %s", conf.Proxy.Host)
 			endpoint.(*APIEndpoint).SetProxy(conf.Proxy)
 		}
 	} else {
@@ -101,7 +103,9 @@ func (w *Writer) isPayloadBufferingEnabled() bool {
 // Run starts the writer.
 func (w *Writer) Run() {
 	w.exitWG.Add(1)
-	go w.main()
+	watchdog.Go(func() {
+		w.main()
+	})
 }
 
 // main is the main loop of the writer goroutine. If buffers payloads and

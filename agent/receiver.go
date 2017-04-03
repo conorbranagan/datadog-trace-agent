@@ -17,6 +17,7 @@ import (
 	"github.com/DataDog/datadog-trace-agent/model"
 	"github.com/DataDog/datadog-trace-agent/sampler"
 	"github.com/DataDog/datadog-trace-agent/statsd"
+	"github.com/DataDog/datadog-trace-agent/watchdog"
 )
 
 // The trace agent used to listen on port 7777, but now uses port 8126. Keep
@@ -109,7 +110,9 @@ func (r *HTTPReceiver) Run() {
 	}
 
 	go r.preSampler.Run()
-	go r.logStats()
+	watchdog.Go(func() {
+		r.logStats()
+	})
 }
 
 // Listen creates a new HTTP server listening on the provided address.
@@ -137,8 +140,12 @@ func (r *HTTPReceiver) Listen(addr, logExtra string) error {
 
 	log.Infof("listening for traces at http://%s%s", addr, logExtra)
 
-	go stoppableListener.Refresh(r.conf.ConnectionLimit)
-	go server.Serve(stoppableListener)
+	watchdog.Go(func() {
+		stoppableListener.Refresh(r.conf.ConnectionLimit)
+	})
+	watchdog.Go(func() {
+		server.Serve(stoppableListener)
+	})
 
 	return nil
 }

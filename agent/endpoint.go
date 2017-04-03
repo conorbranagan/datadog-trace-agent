@@ -7,10 +7,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	log "github.com/cihub/seelog"
+
 	"github.com/DataDog/datadog-trace-agent/config"
 	"github.com/DataDog/datadog-trace-agent/model"
 	"github.com/DataDog/datadog-trace-agent/statsd"
-	log "github.com/cihub/seelog"
+	"github.com/DataDog/datadog-trace-agent/watchdog"
 )
 
 // apiError stores a list of errors triggered when sending data to a
@@ -27,6 +29,10 @@ func newAPIError() *apiError {
 
 func (err *apiError) IsEmpty() bool {
 	return len(err.errs) == 0
+}
+
+func (err *apiError) SetClient(client *http.Client) {
+	err.endpoint.client = client
 }
 
 func (err *apiError) Append(url, apiKey string, e error) {
@@ -87,7 +93,9 @@ func NewAPIEndpoint(urls, apiKeys []string) *APIEndpoint {
 		urls:    urls,
 		client:  http.DefaultClient,
 	}
-	go a.logStats()
+	watchdog.Go(func() {
+		a.logStats()
+	})
 	return &a
 }
 
@@ -119,6 +127,11 @@ func (a *APIEndpoint) Write(p model.AgentPayload) (int, error) {
 	atomic.AddInt64(&a.stats.TracesStats, int64(len(p.Stats)))
 
 	endpointErr := newAPIError()
+
+	// if this payload cannot be flushed due to API errors
+	// we need to pass the client along for future submissions
+	// FIXME(aaditya)
+	endpointErr.SetClient(a.client)
 
 	for i := range a.urls {
 		atomic.AddInt64(&a.stats.TracesPayload, 1)
