@@ -40,15 +40,20 @@ func ComputeSublayers(trace *Trace) []SublayerValue {
 		// In-place filtering
 		nonAsyncChildren := Spans(children[:0])
 		for _, child := range children {
-			if child.End() <= span.End() {
+			if child.Start >= span.Start && child.End() <= span.End() {
 				nonAsyncChildren = append(nonAsyncChildren, child)
 			}
 		}
 
 		duration := span.Duration - nonAsyncChildren.CoveredDuration()
 
-		typeDuration[span.Type] += float64(duration)
-		serviceDuration[span.Service] += float64(duration)
+		if span.Type != "" {
+			typeDuration[span.Type] += float64(duration)
+		}
+
+		if span.Service != "" {
+			serviceDuration[span.Service] += float64(duration)
+		}
 	}
 
 	// Generate sublayers values

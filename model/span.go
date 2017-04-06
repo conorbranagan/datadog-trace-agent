@@ -159,7 +159,6 @@ func (spans Spans) CoveredDuration() int64 {
 				if nextEnd > end {
 					maxEnd = nextEnd
 				}
-				continue
 			} else {
 				duration += maxEnd - start
 				start = nextSpan.Start
