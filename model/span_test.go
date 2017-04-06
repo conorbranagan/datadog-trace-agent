@@ -87,7 +87,7 @@ func TestSpansCoveredDuration(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		assert.Equal(test.duration, test.spans.CoveredDuration(),
+		assert.Equal(test.duration, test.spans.CoveredDuration(0),
 			fmt.Sprintf("%#v", test.spans))
 	}
 }
