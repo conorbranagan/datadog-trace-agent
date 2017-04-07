@@ -118,7 +118,7 @@ func SetSublayersOnSpan(span *Span, values []SublayerValue) {
 // SetSpanDurationsOnTrace sets a sublayer duration metric for each span in a
 // trace.
 func SetSpanDurationsOnTrace(trace Trace, durations map[uint64]float64) {
-	for i, _ := range trace {
+	for i := range trace {
 		span := &trace[i]
 		if span.Metrics == nil {
 			span.Metrics = make(map[string]float64)
