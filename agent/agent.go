@@ -145,8 +145,9 @@ func (a *Agent) Process(t model.Trace) {
 	rate *= a.Receiver.preSampler.Rate()
 	sampler.SetTraceAppliedSampleRate(root, rate)
 
-	sublayers := model.ComputeSublayers(&t)
+	sublayers, spanDurations := model.ComputeSublayers(&t)
 	model.SetSublayersOnSpan(root, sublayers)
+	model.SetSpanDurationsOnTrace(t, spanDurations)
 
 	for i := range t {
 		t[i] = quantizer.Quantize(t[i])
