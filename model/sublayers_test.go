@@ -66,10 +66,9 @@ func TestComputeSublayers(t *testing.T) {
 	}
 
 	tests := []struct {
-		name          string
-		trace         Trace
-		values        []SublayerValue
-		spanDurations map[uint64]float64
+		name   string
+		trace  Trace
+		values []SublayerValue
 	}{
 		// Single span
 		//
@@ -85,9 +84,6 @@ func TestComputeSublayers(t *testing.T) {
 				sublayerValueService("web-server", 100.0),
 				sublayerValueType("web", 100.0),
 				sublayerValueCount(1.0),
-			},
-			map[uint64]float64{
-				1: 100.0,
 			},
 		},
 
@@ -114,12 +110,6 @@ func TestComputeSublayers(t *testing.T) {
 				sublayerValueType("template", 20.0),
 				sublayerValueType("web", 60.0),
 				sublayerValueCount(4.0),
-			},
-			map[uint64]float64{
-				1: 60.0,
-				2: 10.0,
-				3: 10.0,
-				4: 20.0,
 			},
 		},
 
@@ -151,15 +141,6 @@ func TestComputeSublayers(t *testing.T) {
 				sublayerValueType("web", 35.0),
 				sublayerValueCount(7.0),
 			},
-			map[uint64]float64{
-				1: 35.0,
-				2: 20.0,
-				3: 20.0,
-				4: 20.0,
-				5: 20.0,
-				6: 20.0,
-				7: 10.0,
-			},
 		},
 
 		// Asynchronous spans, non-parallel
@@ -183,11 +164,6 @@ func TestComputeSublayers(t *testing.T) {
 				sublayerValueType("rpc", 70.0),
 				sublayerValueType("web", 50.0),
 				sublayerValueCount(3.0),
-			},
-			map[uint64]float64{
-				1: 50.0,
-				2: 50.0,
-				3: 20.0,
 			},
 		},
 
@@ -214,12 +190,6 @@ func TestComputeSublayers(t *testing.T) {
 				sublayerValueType("rpc", 130.0),
 				sublayerValueType("web", 50.0),
 				sublayerValueCount(4.0),
-			},
-			map[uint64]float64{
-				1: 50.0,
-				2: 50.0,
-				3: 70.0,
-				4: 10.0,
 			},
 		},
 
@@ -248,12 +218,6 @@ func TestComputeSublayers(t *testing.T) {
 				sublayerValueType("rpc", 50.0),
 				sublayerValueType("web", 50.0),
 				sublayerValueCount(4.0),
-			},
-			map[uint64]float64{
-				1: 50.0,
-				2: 20.0,
-				3: 30.0,
-				4: 30.0,
 			},
 		},
 
@@ -293,26 +257,14 @@ func TestComputeSublayers(t *testing.T) {
 				sublayerValueType("web", 70.0),
 				sublayerValueCount(7.0),
 			},
-			map[uint64]float64{
-				1: 40.0,
-				2: 20.0,
-				3: 30.0,
-				4: 30.0,
-				5: 55.0,
-				6: 80.0,
-				7: 40.0,
-			},
 		},
 	}
 
 	for _, test := range tests {
-		values, spanDurations := ComputeSublayers(&test.trace)
+		values := ComputeSublayers(&test.trace)
 		sort.Sort(sublayerValues(values))
 
-		label := "test: " + test.name
-
-		assert.Equal(test.values, values, label)
-		assert.Equal(test.spanDurations, spanDurations, label)
+		assert.Equal(test.values, values, "test: "+test.name)
 	}
 }
 
@@ -350,33 +302,6 @@ func TestSetSublayersOnSpan(t *testing.T) {
 		"_sublayers.duration.by_service.sublayer_service:pgsql":      30.0,
 		"_sublayers.duration.by_service.sublayer_service:pgsql-read": 20.0,
 	}, span.Metrics)
-}
-
-func TestSetSpanDurationsOnTrace(t *testing.T) {
-	assert := assert.New(t)
-
-	durations := map[uint64]float64{
-		1: 1.0,
-		2: 2.0,
-		3: 4.0,
-	}
-
-	trace := Trace{
-		Span{SpanID: 1},
-		Span{SpanID: 2},
-		Span{SpanID: 3, Metrics: map[string]float64{"foo": 42.0}},
-		Span{SpanID: 4},
-	}
-	SetSpanDurationsOnTrace(trace, durations)
-
-	assert.Equal(map[string]float64{"_sublayers.duration": 1.0},
-		trace[0].Metrics)
-	assert.Equal(map[string]float64{"_sublayers.duration": 2.0},
-		trace[1].Metrics)
-	assert.Equal(map[string]float64{"foo": 42.0, "_sublayers.duration": 4.0},
-		trace[2].Metrics)
-	assert.Equal(map[string]float64{},
-		trace[3].Metrics)
 }
 
 func BenchmarkSublayerThru(b *testing.B) {

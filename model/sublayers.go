@@ -25,12 +25,10 @@ func (v SublayerValue) GoString() string {
 	return v.String()
 }
 
-// ComputeSublayers compute sublayers durations and return both a slice of
-// sublayer stats and a map of individual span durations.
-func ComputeSublayers(trace *Trace) ([]SublayerValue, map[uint64]float64) {
-	spanDuration := make(map[uint64]float64)
-	typeDurations := make(map[string]float64)
-	serviceDurations := make(map[string]float64)
+// ComputeSublayers extracts sublayer values by type and service for a trace
+func ComputeSublayers(trace *Trace) []SublayerValue {
+	typeDuration := make(map[string]float64)
+	serviceDuration := make(map[string]float64)
 
 	childrenMap := trace.ChildrenMap()
 
@@ -54,23 +52,21 @@ func ComputeSublayers(trace *Trace) ([]SublayerValue, map[uint64]float64) {
 		}
 
 		childrenDuration := nonAsyncChildren.CoveredDuration(span.Start)
-		duration := float64(span.Duration - childrenDuration)
-
-		spanDuration[span.SpanID] = duration
+		duration := span.Duration - childrenDuration
 
 		if span.Type != "" {
-			typeDurations[span.Type] += duration
+			typeDuration[span.Type] += float64(duration)
 		}
 
 		if span.Service != "" {
-			serviceDurations[span.Service] += duration
+			serviceDuration[span.Service] += float64(duration)
 		}
 	}
 
 	// Generate sublayers values
 	var values []SublayerValue
 
-	for spanType, duration := range typeDurations {
+	for spanType, duration := range typeDuration {
 		value := SublayerValue{
 			Metric: "_sublayers.duration.by_type",
 			Tag:    Tag{"sublayer_type", spanType},
@@ -80,7 +76,7 @@ func ComputeSublayers(trace *Trace) ([]SublayerValue, map[uint64]float64) {
 		values = append(values, value)
 	}
 
-	for service, duration := range serviceDurations {
+	for service, duration := range serviceDuration {
 		value := SublayerValue{
 			Metric: "_sublayers.duration.by_service",
 			Tag:    Tag{"sublayer_service", service},
@@ -95,7 +91,7 @@ func ComputeSublayers(trace *Trace) ([]SublayerValue, map[uint64]float64) {
 		Value:  float64(len(*trace)),
 	})
 
-	return values, spanDuration
+	return values
 }
 
 // SetSublayersOnSpan takes some sublayers and pins them on the given span.Metrics
@@ -112,23 +108,5 @@ func SetSublayersOnSpan(span *Span, values []SublayerValue) {
 		}
 
 		span.Metrics[name] = value.Value
-	}
-}
-
-// SetSpanDurationsOnTrace sets a sublayer duration metric for each span in a
-// trace.
-func SetSpanDurationsOnTrace(trace Trace, durations map[uint64]float64) {
-	for i := range trace {
-		span := &trace[i]
-		if span.Metrics == nil {
-			span.Metrics = make(map[string]float64)
-		}
-
-		duration, ok := durations[span.SpanID]
-		if !ok {
-			continue
-		}
-
-		span.Metrics["_sublayers.duration"] = duration
 	}
 }
