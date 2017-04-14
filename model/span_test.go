@@ -85,6 +85,8 @@ func TestSpansCoveredDuration(t *testing.T) {
 		{0, Spans{span(10, 20), span(50, 20)}, 40},
 		{0, Spans{span(10, 20), span(15, 20)}, 25},
 		{0, Spans{span(10, 20), span(5, 30), span(50, 10)}, 40},
+		{0, Spans{span(0, 50), span(10, 10), span(25, 10)}, 50},
+		{0, Spans{span(0, 50), span(10, 10), span(30, 40)}, 70},
 
 		{5, Spans{span(10, 10), span(15, 10)}, 15},
 		{5, Spans{span(0, 10)}, 5},

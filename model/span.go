@@ -148,32 +148,29 @@ func (spans Spans) CoveredDuration(parentStart int64) int64 {
 	sort.Sort(spansByStartDate(spans))
 
 	duration := int64(0)
-	start := adjustStart(spans[0].Start)
-	maxEnd := spans[0].End()
+	start := int64(-1)
+	maxEnd := int64(0)
 
 	for i, span := range spans {
+		if start == -1 {
+			start = adjustStart(span.Start)
+		}
+
 		end := span.End()
-		if end < parentStart {
-			continue
+		if end > maxEnd {
+			maxEnd = end
 		}
 
 		if i == len(spans)-1 {
-			// Last span
 			duration += maxEnd - start
 		} else {
 			nextSpan := spans[i+1]
 			nextStart := adjustStart(nextSpan.Start)
-			nextEnd := nextSpan.End()
 
-			if nextStart <= end {
-				// span and nextSpan overlap
-				if nextEnd > end {
-					maxEnd = nextEnd
-				}
-			} else {
+			if nextStart > maxEnd {
 				duration += maxEnd - start
-				start = nextStart
-				maxEnd = nextEnd
+				start = -1
+				maxEnd = 0
 			}
 		}
 	}
