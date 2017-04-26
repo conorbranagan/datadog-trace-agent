@@ -82,6 +82,9 @@ func (a *Agent) Run() {
 	watchdogTicker := time.NewTicker(a.conf.WatchdogInterval)
 	defer watchdogTicker.Stop()
 
+	// update the data served by expvar so that we don't expose a 0 sample rate
+	updatePreSampler(*a.Receiver.preSampler.Stats())
+
 	a.Receiver.Run()
 	a.Writer.Run()
 	a.Sampler.Run()
@@ -187,11 +190,15 @@ func (a *Agent) watchdog() {
 	updateWatchdogInfo(wi)
 
 	// Adjust pre-sampling dynamically
-	rate := sampler.CalcPreSampleRate(a.conf.MaxCPU, wi.CPU.UserAvg, a.Receiver.preSampler.RealRate())
+	rate, err := sampler.CalcPreSampleRate(a.conf.MaxCPU, wi.CPU.UserAvg, a.Receiver.preSampler.RealRate())
 	if rate > a.conf.PreSampleRate {
 		rate = a.conf.PreSampleRate
 	}
+	if err != nil {
+		log.Warnf("problem computing pre-sample rate: %v", err)
+	}
 	a.Receiver.preSampler.SetRate(rate)
+	a.Receiver.preSampler.SetError(err)
 
-	updatePreSamplerStats(*a.Receiver.preSampler.Stats())
+	updatePreSampler(*a.Receiver.preSampler.Stats())
 }
