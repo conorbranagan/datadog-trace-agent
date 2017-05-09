@@ -114,6 +114,9 @@ func (r *HTTPReceiver) Run() {
 		r.preSampler.Run()
 	})
 	watchdog.Go(func() {
+		r.preSampler.Run()
+	})
+	watchdog.Go(func() {
 		r.logStats()
 	})
 }
