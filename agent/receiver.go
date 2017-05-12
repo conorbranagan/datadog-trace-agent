@@ -20,10 +20,6 @@ import (
 	"github.com/DataDog/datadog-trace-agent/watchdog"
 )
 
-// The trace agent used to listen on port 7777, but now uses port 8126. Keep
-// listening on 7777 during the transition.
-const legacyReceiverPort = 7777
-
 const (
 	maxRequestBodyLength = 10 * 1024 * 1024
 	tagTraceHandler      = "handler:traces"
@@ -104,15 +100,6 @@ func (r *HTTPReceiver) Run() {
 		die("%v", err)
 	}
 
-	legacyAddr := fmt.Sprintf("%s:%d", r.conf.ReceiverHost, legacyReceiverPort)
-	if err := r.Listen(legacyAddr, " (legacy)"); err != nil {
-		log.Error(err)
-	}
-
-	go r.preSampler.Run()
-	watchdog.Go(func() {
-		r.preSampler.Run()
-	})
 	watchdog.Go(func() {
 		r.preSampler.Run()
 	})
