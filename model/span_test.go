@@ -101,3 +101,11 @@ func TestSpansCoveredDuration(t *testing.T) {
 			fmt.Sprintf("%#v", test.spans))
 	}
 }
+
+func TestSpanWeightNil(t *testing.T) {
+	assert := assert.New(t)
+
+	var span *Span
+
+	assert.Equal(1.0, span.Weight(), "Weight should be callable on nil and return a default value")
+}
